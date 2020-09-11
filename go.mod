@@ -1,4 +1,4 @@
-module aliyun-sts-go-sdk
+module github.com/mxyue/aliyun-sts-go-sdk
 
 go 1.14
 
