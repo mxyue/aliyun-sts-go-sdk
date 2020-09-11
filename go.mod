@@ -1,4 +1,4 @@
-module aliyun-sts
+module aliyun-sts-go-sdk
 
 go 1.14
 
