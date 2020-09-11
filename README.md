@@ -17,7 +17,7 @@
 - Go 1.5及以上
 
 ## 安装方法
-- 执行命令 `go get github.com/aliyun/aliyun-sts-go-sdk/sts`
+- 执行命令 `go get github.com/mxyue/aliyun-sts-go-sdk/sts`
 
 ## 使用方法
 ```go
@@ -42,10 +42,16 @@ const (
 	sessionName     = "sts_demo"
 )
 
+type m = map[string]interface{}
+
 func main() {
 	stsClient := sts.NewClient(accessKeyID, accessKeySecret, roleArn, sessionName)
-
-	resp, err := stsClient.AssumeRole(3600)
+	policy := m{"Version": "1", "Statement": []m{{
+		"Action": []string{"oss:GetObject", "oss:PutObject", "oss:AbortMultipartUpload"},
+		"Effect": "Allow",
+		"Resource": []string{"acs:oss:*:*:test/*"},
+	}}}
+	resp, err := stsClient.AssumeRole(3600, policy)
 	if err != nil {
 		handleError(err)
 	}
@@ -57,9 +63,3 @@ func main() {
 	fmt.Printf("    Expiration:%s\n", resp.Credentials.Expiration)
 }
 ```
-
-## 作者
-- [Yubin Bai](https://github.com/baiyubin)
-
-## 协议
-- [MIT](https://github.com/aliyun/aliyun-sts-go-sdk/blob/master/LICENSE)

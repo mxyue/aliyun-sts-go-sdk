@@ -37,10 +37,10 @@ type ServiceError struct {
 // Credentials the credentials obtained by AssumedRole,
 // used for the peration of Alibaba Cloud service.
 type Credentials struct {
-	AccessKeyId     string
-	AccessKeySecret string
-	Expiration      time.Time
-	SecurityToken   string
+	AccessKeyId     string    `json:"accessKeyId"`
+	AccessKeySecret string    `json:"accessKeySecret"`
+	Expiration      time.Time `json:"expiration"`
+	SecurityToken   string    `json:"securityToken"`
 }
 
 // AssumedRoleUser the user to AssumedRole
@@ -90,13 +90,13 @@ const (
 )
 
 // AssumeRole assume role
-func (c *Client) AssumeRole(expiredTime uint) (*Response, error) {
-	url, err := c.generateSignedURL(expiredTime)
+func (c *Client) AssumeRole(expiredTime uint, policy interface{}) (*Response, error) {
+	sigURL, err := c.generateSignedURL(expiredTime, policy)
 	if err != nil {
 		return nil, err
 	}
 
-	body, status, err := c.sendRequest(url)
+	body, status, err := c.sendRequest(sigURL)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (c *Client) AssumeRole(expiredTime uint) (*Response, error) {
 }
 
 // Private function
-func (c *Client) generateSignedURL(expiredTime uint) (string, error) {
+func (c *Client) generateSignedURL(expiredTime uint, policy interface{}) (string, error) {
 	queryStr := "SignatureVersion=" + StsSignVersion
 	queryStr += "&Format=" + RespBodyFormat
 	queryStr += "&Timestamp=" + url.QueryEscape(time.Now().UTC().Format(TimeFormat))
@@ -117,6 +117,14 @@ func (c *Client) generateSignedURL(expiredTime uint) (string, error) {
 	queryStr += "&Action=AssumeRole"
 	queryStr += "&SignatureNonce=" + uuid.NewV4().String()
 	queryStr += "&DurationSeconds=" + strconv.FormatUint((uint64)(expiredTime), 10)
+
+	if policy != nil {
+		policyBts, jsonErr := json.Marshal(policy)
+		if jsonErr != nil {
+			panic(jsonErr)
+		}
+		queryStr += "&Policy=" + string(policyBts)
+	}
 
 	// Sort query string
 	queryParams, err := url.ParseQuery(queryStr)

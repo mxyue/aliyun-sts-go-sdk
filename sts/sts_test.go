@@ -77,9 +77,32 @@ func (s *StsTestSuite) TestAssumeRole(c *C) {
 	now := time.Now()
 	client := NewClient(accessKeyId, accessKeySecret, roleArn, "sts_test")
 
-	resp, err := client.AssumeRole(900)
+	resp, err := client.AssumeRole(900, nil)
 	c.Assert(err, IsNil)
 
+	c.Assert(resp.RequestId, Not(Equals), "")
+
+	c.Assert(resp.AssumedRoleUser.Arn, Not(Equals), "")
+	c.Assert(resp.AssumedRoleUser.AssumedRoleId, Not(Equals), "")
+
+	c.Assert(resp.Credentials.AccessKeyId, Not(Equals), "")
+	c.Assert(resp.Credentials.AccessKeySecret, Not(Equals), "")
+	c.Assert(resp.Credentials.SecurityToken, Not(Equals), "")
+	c.Assert(resp.Credentials.Expiration.After(now), Equals, true)
+}
+
+type m = map[string]interface{}
+
+func (s *StsTestSuite) TestAssumeRoleWithPolicy(c *C) {
+	now := time.Now()
+	client := NewClient(accessKeyId, accessKeySecret, roleArn, "sts_test")
+	policy := m{"Version": "1", "Statement": []m{{
+		"Action":   []string{"oss:GetObject", "oss:PutObject", "oss:AbortMultipartUpload"},
+		"Effect":   "Allow",
+		"Resource": []string{"acs:oss:*:*:test/*"},
+	}}}
+	resp, err := client.AssumeRole(900, policy)
+	c.Assert(err, IsNil)
 	c.Assert(resp.RequestId, Not(Equals), "")
 
 	c.Assert(resp.AssumedRoleUser.Arn, Not(Equals), "")
@@ -94,7 +117,7 @@ func (s *StsTestSuite) TestAssumeRole(c *C) {
 func (s *StsTestSuite) TestAssumeRoleNegative(c *C) {
 	// AccessKeyID invalid
 	client := NewClient("", accessKeySecret, roleArn, "sts_test")
-	resp, err := client.AssumeRole(900)
+	resp, err := client.AssumeRole(900, nil)
 	c.Assert(resp, IsNil)
 	c.Assert(err, NotNil)
 	log.Println("Error:", err)
@@ -110,7 +133,7 @@ func (s *StsTestSuite) TestAssumeRoleNegative(c *C) {
 
 	// AccessKeySecret invalid
 	client = NewClient(accessKeyId, accessKeySecret+" ", roleArn, "sts_test")
-	resp, err = client.AssumeRole(900)
+	resp, err = client.AssumeRole(900, nil)
 	c.Assert(resp, IsNil)
 	c.Assert(err, NotNil)
 
@@ -123,7 +146,7 @@ func (s *StsTestSuite) TestAssumeRoleNegative(c *C) {
 	// SessionName invalid
 	client = NewClient(accessKeyId, accessKeySecret, roleArn, "x")
 
-	resp, err = client.AssumeRole(900)
+	resp, err = client.AssumeRole(900, nil)
 	c.Assert(resp, IsNil)
 	c.Assert(err, NotNil)
 
